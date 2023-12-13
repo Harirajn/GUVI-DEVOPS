@@ -1,0 +1,4 @@
+Create a file with .txt extension (/home/demo.txt). Change the permission set if that file, so that any user can read it, the group can read/write & owner can read/write/execute it.
+
+ -->sudo touch /home/demo.txt
+ -->sudo chmod 764 /home/demo.txt
