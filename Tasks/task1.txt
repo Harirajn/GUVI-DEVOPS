@@ -1,0 +1,6 @@
+1. Create 20 files with .txt extensions and rename the firt 5 files to .yml extension
+ --> touch file{1..10}.txt
+
+2. Rename the first 5 files to .yml extension.
+
+ --> for i in `seq 1 5`; do echo "mv file$i.txt file$i.yml"; done
