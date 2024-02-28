@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - nginx_data:/var/opt/nginx
+    container_name: webserver
+
+volumes:
+  nginx_data:
