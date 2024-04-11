@@ -1,56 +1,61 @@
+# Provider Configuration
 provider "aws" {
-  region = "us-west-2"
+  region     = "us-west-2"
+  access_key = "*****************" 
+  secret_key = "******************L"
 }
 
-# Create a new VPC
+# VPC Creation
 resource "aws_vpc" "my_vpc" {
-  cidr_block       = "10.0.0.0/16"
-  enable_dns_support = true
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
   enable_dns_hostnames = true
+
   tags = {
     Name = "my_vpc"
   }
 }
 
-# Create 3 subnets in different AZs for high availability
-resource "aws_subnet" "my_subnet" {
-  count                   = 3
-  vpc_id                  = aws_vpc.my_vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.my_vpc.cidr_block, 8, count.index)
-  availability_zone       = element(
-                              flatten([
-                                for az in data.aws_availability_zones.available.names : 
-                                  list(az)
-                              ]), 
-                              count.index)
-  map_public_ip_on_launch = true
+# Subnet Creation across three different availability zones
+resource "aws_subnet" "subnet1" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-west-2a"
+
   tags = {
-    Name = "my_subnet-${count.index}"
+    Name = "subnet1"
   }
 }
 
-data "aws_availability_zones" "available" {
-  state = "available"
+resource "aws_subnet" "subnet2" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-west-2b"
+
+  tags = {
+    Name = "subnet2"
+  }
 }
 
-# Security Group to allow SSH and web access
-resource "aws_security_group" "my_sg" {
-  name        = "sg_SSH"
-  description = "Allow SSH and HTTP"
-  vpc_id      = aws_vpc.my_vpc.id
+resource "aws_subnet" "subnet3" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "us-west-2c"
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  tags = {
+    Name = "subnet3"
   }
+}
+
+# Security Group for instance access control
+resource "aws_security_group" "instance_sg" {
+  vpc_id = aws_vpc.my_vpc.id
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -61,19 +66,29 @@ resource "aws_security_group" "my_sg" {
   }
 
   tags = {
-    Name = "my_sg"
+    Name = "instance_sg"
   }
 }
 
-# Create 2 EC2 instances in 2 different subnets
-resource "aws_instance" "my_instance" {
-  count                  = 2
-  ami                    = "ami-08116b9957a259459" 
+# EC2 Instances in different subnets
+resource "aws_instance" "instance1" {
+  ami                    = "ami-08116b9957a259459"
   instance_type          = "t2.micro"
-  subnet_id              = element(aws_subnet.my_subnet.*.id, count.index)
-  security_groups        = [aws_security_group.my_sg.name]
+  subnet_id              = aws_subnet.subnet1.id
+  vpc_security_group_ids = [aws_security_group.instance_sg.id]
 
   tags = {
-    Name = "Instance-${count.index}"
+    Name = "instance1"
+  }
+}
+
+resource "aws_instance" "instance2" {
+  ami                    = "ami-08116b9957a259459"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.subnet2.id
+  vpc_security_group_ids = [aws_security_group.instance_sg.id]
+
+  tags = {
+    Name = "instance2"
   }
 }
